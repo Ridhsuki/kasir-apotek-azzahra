@@ -61,7 +61,11 @@ class ProductResource extends Resource implements HasShieldPermissions
         return $form
             ->schema([
                 Forms\Components\TextInput::make('name')
-                    ->label('Nama Produk')
+                    ->label('Nama Obat')
+                    ->required()
+                    ->maxLength(255),
+                Forms\Components\TextInput::make('nama_perusahaan')
+                    ->label('Nama Perusahaan')
                     ->required()
                     ->maxLength(255),
                 Forms\Components\Select::make('category_id')
@@ -78,11 +82,7 @@ class ProductResource extends Resource implements HasShieldPermissions
                     ->required()
                     ->numeric()
                     ->prefix('Rp'),
-                Forms\Components\FileUpload::make('image')
-                    ->label('Gambar Produk')
-                    ->directory('products')
-                    ->helperText('jika tidak diisi akan diisi foto default')
-                    ->image(),
+
                 Forms\Components\TextInput::make('stock')
                     ->label('Stok Produk')
                     ->helperText('Stok hanya dapat diisi/ditambah pada menejemen inventori')
@@ -106,6 +106,9 @@ class ProductResource extends Resource implements HasShieldPermissions
                     ->minDate(now())
                     ->required()
                     ->placeHolder('Masukkan tanggal kadaluarsa produk'),
+                Forms\Components\TextInput::make('no_batch')
+                    ->label('No Batch')
+                    ->required(),
                 Forms\Components\Toggle::make('is_active')
                     ->label('Produk Aktif')
                     ->required(),
@@ -119,27 +122,60 @@ class ProductResource extends Resource implements HasShieldPermissions
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('expired_status')
+                Tables\Columns\TextColumn::make('expiry_date')
                     ->label('Status')
-                    ->getStateUsing(
-                        fn(Product $record) =>
-                        \Carbon\Carbon::parse($record->expiry_date)->isPast()
-                            ? 'Kadaluarsa'
-                            : ''
-                    )
-                    ->color(
-                        fn(Product $record) =>
-                        \Carbon\Carbon::parse($record->expiry_date)->isPast()
-                            ? 'danger'
-                            : null
-                    ),
+                    ->getStateUsing(function (Product $record) {
+                        if (is_null($record->expiry_date)) {
+                            return '';
+                        }
+
+                        $expiryDate = \Carbon\Carbon::parse($record->expiry_date);
+
+                        if ($expiryDate->isPast()) {
+                            return 'Expired';
+                        }
+
+                        // Optional: You can add logic here to show "Will expire soon" if needed
+                        // For example, if expiry is within 30 days
+                        if ($expiryDate->diffInDays(now()) <= 30) {
+                            return 'Will expire soon';
+                        }
+
+                        return 'Active';
+                    })
+                    ->color(function (Product $record) {
+                        if (is_null($record->expiry_date)) {
+                            return null;
+                        }
+
+                        $expiryDate = \Carbon\Carbon::parse($record->expiry_date);
+
+                        if ($expiryDate->isPast()) {
+                            return 'danger'; // Red color for expired
+                        }
+
+                        // Optional: Yellow color for items that will expire soon
+                        if ($expiryDate->diffInDays(now()) <= 30) {
+                            return 'warning';
+                        }
+
+                        return 'success'; // Green color for active
+                    })
+                    ->description(function (Product $record) {
+                        if (!is_null($record->expiry_date)) {
+                            return 'Expiry: ' . \Carbon\Carbon::parse($record->expiry_date)->format('d M Y');
+                        }
+                        return null;
+                    }),
                 Tables\Columns\TextColumn::make('name')
-                    ->label('Nama Produk')
+                    ->label('Nama Obat')
                     ->description(fn(Product $record): string => $record->category()->withTrashed()->value('name'))
                     ->searchable(),
-                Tables\Columns\ImageColumn::make('image')
-                    ->label('Gambar')
-                    ->circular(),
+                Tables\Columns\TextColumn::make('nama_perusahaan')
+                    ->label('Nama Perusahaan')
+                    ->description(fn(Product $record): string => $record->category()->withTrashed()->value('name'))
+                    ->searchable(),
+
                 Tables\Columns\TextColumn::make('stock')
                     ->label('Stok')
                     ->numeric()
@@ -166,6 +202,11 @@ class ProductResource extends Resource implements HasShieldPermissions
                     ->label('Tanggal Kadaluarsa')
                     ->date('d-m-Y')
                     ->sortable(),
+                Tables\Columns\TextColumn::make('no_batch')
+                    ->label('No Batch')
+                    ->prefix('Rp ')
+                    ->sortable()
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

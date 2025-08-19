@@ -25,7 +25,7 @@ Perhatikan untuk menjalankan atau mensetup project ini.
 4. Jalankan perintah `php artisan shield:generate --all` (untuk generate policy dari semua model)
 5. Jalankan perintah `php artisan shield:super-admin` (untuk menambahkan/assign role super_admin ke user tertentu)
 6. Jalankan perintah `php artisan storage:link` untuk membuat symlink
-7. Jalankan perintah `php artisan serve` untuk menjalankan projek
+7. Jalankan perintah `c` untuk menjalankan projek
 8. Buka browser dan kunjungi link http://127.0.0.1:8000
 9. Login dengan email (admin@gmail.com) dan password (admin123)
 

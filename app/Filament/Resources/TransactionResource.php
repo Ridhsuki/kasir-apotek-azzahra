@@ -89,7 +89,7 @@ class TransactionResource extends Resource implements HasShieldPermissions
                 Forms\Components\Section::make('Produk dipesan')->schema([
                     self::getItemsRepeater(),
                 ])
-                ->description('Pastikan Cek Terlebih Dahulu ketersediaan Stok Produk'),
+                    ->description('Pastikan Cek Terlebih Dahulu ketersediaan Stok Produk'),
 
 
                 Forms\Components\Group::make()
@@ -100,6 +100,11 @@ class TransactionResource extends Resource implements HasShieldPermissions
                                     ->required()
                                     ->readOnly()
                                     ->numeric(),
+                                Forms\Components\TextInput::make('diskon')
+                                    ->required()
+                                    ->readOnly()
+                                    ->numeric()
+                                    ->default(0),
                                 Forms\Components\Textarea::make('notes')
                                     ->columnSpanFull(),
                             ])
@@ -136,7 +141,7 @@ class TransactionResource extends Resource implements HasShieldPermissions
                                 Forms\Components\TextInput::make('cash_received')
                                     ->numeric()
                                     ->reactive()
-                                    ->label('Nominal Bayar')
+                                    ->label('Nominal pembayaran')
                                     ->readOnly(fn(Forms\Get $get) => $get('is_cash') == false)
                                     ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get, $state) {
                                         // function untuk menghitung uang kembalian
@@ -197,9 +202,9 @@ class TransactionResource extends Resource implements HasShieldPermissions
                             ->when($data['end_date'], fn($query, $date) => $query->whereDate('created_at', '<=', $date));
                     }),
                 Tables\Filters\TrashedFilter::make()
-                ->placeholder('Tanpa return pelanggan')
-                ->trueLabel('Beserta return pelanggan')
-                ->falseLabel('Hanya return pelanggan'),
+                    ->placeholder('Tanpa return pelanggan')
+                    ->trueLabel('Beserta return pelanggan')
+                    ->falseLabel('Hanya return pelanggan'),
             ], layout: Tables\Enums\FiltersLayout::Modal)
             ->actions([
                 Tables\Actions\Action::make('PrintBluetooth')
@@ -210,7 +215,7 @@ class TransactionResource extends Resource implements HasShieldPermissions
                         $items = $order->transactionItems;
 
 
-                        $livewire->printStruk($order,$items);
+                        $livewire->printStruk($order, $items);
                     })
                     ->icon('heroicon-o-printer')
                     ->color('amber'),
@@ -230,30 +235,30 @@ class TransactionResource extends Resource implements HasShieldPermissions
                         ->color('warning')
                         ->label('Detail'),
                     Tables\Actions\DeleteAction::make()
-                    ->label('Return pelanggan'),
+                        ->label('Return pelanggan'),
                     Tables\Actions\ForceDeleteAction::make()
-                    ->visible()
-                    ->label('Batalkan Transaksi'),
+                        ->visible()
+                        ->label('Batalkan Transaksi'),
                     Tables\Actions\RestoreAction::make(),
                 ])
-                ->tooltip('Tindakan'),
+                    ->tooltip('Tindakan'),
             ])
             ->bulkActions([
-                    Tables\Actions\DeleteBulkAction::make()
+                Tables\Actions\DeleteBulkAction::make()
                     ->label('Return Pelanggan')
                     ->button(),
-                    Tables\Actions\ForceDeleteBulkAction::make()
+                Tables\Actions\ForceDeleteBulkAction::make()
                     ->visible()
                     ->label('Batalkan Transaksi')
                     ->button(),
-                    Tables\Actions\RestoreBulkAction::make(),
-                    // ...
+                Tables\Actions\RestoreBulkAction::make(),
+                // ...
             ])
             ->headerActions([]);
     }
 
-    
-     public static function getItemsRepeater(): Repeater
+
+    public static function getItemsRepeater(): Repeater
     {
         return Repeater::make('transactionItems')
             ->hiddenLabel()
@@ -304,11 +309,11 @@ class TransactionResource extends Resource implements HasShieldPermissions
                     ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
                         $id = $get('product_id');
                         $product = Product::withTrashed()->find($id);
-                            $quantity = (int) ($get('quantity') ?? 0);
-                            $price = (int) ($product->price ?? 0);
-                            $costPrice = (int) ($product->cost_price ?? 0);
-                            $set('total_profit', ($price - $costPrice) * $quantity);
-                            self::updateTotalPrice($get, $set);
+                        $quantity = (int) ($get('quantity') ?? 0);
+                        $price = (int) ($product->price ?? 0);
+                        $costPrice = (int) ($product->cost_price ?? 0);
+                        $set('total_profit', ($price - $costPrice) * $quantity);
+                        self::updateTotalPrice($get, $set);
                     }),
                 Forms\Components\TextInput::make('cost_price')
                     ->label('Harga Modal')
@@ -337,24 +342,24 @@ class TransactionResource extends Resource implements HasShieldPermissions
 
             ])
             ->mutateRelationshipDataBeforeSaveUsing(function (array $data) {
-            $invalidProducts = collect($data['transactionItems'] ?? [])
-                ->filter(function ($item) {
-                    $product = Product::withTrashed()->find($item['product_id']);
-                    return !$product || $product->trashed();
-                });
+                $invalidProducts = collect($data['transactionItems'] ?? [])
+                    ->filter(function ($item) {
+                        $product = Product::withTrashed()->find($item['product_id']);
+                        return !$product || $product->trashed();
+                    });
 
-            if ($invalidProducts->isEmpty()) {
-                Notification::make()
-                    ->title('Tidak dapat menyimpan')
-                    ->body('Ada produk yang telah dihapus dari sistem.')
-                    ->danger()
-                    ->send();
+                if ($invalidProducts->isEmpty()) {
+                    Notification::make()
+                        ->title('Tidak dapat menyimpan')
+                        ->body('Ada produk yang telah dihapus dari sistem.')
+                        ->danger()
+                        ->send();
 
-                throw new Halt('Produk tidak valid.');
-            }
+                    throw new Halt('Produk tidak valid.');
+                }
 
-            return $data;
-        });
+                return $data;
+            });
     }
 
     public static function infolist(Infolist $infolist): Infolist
@@ -401,33 +406,33 @@ class TransactionResource extends Resource implements HasShieldPermissions
     }
 
 
-   protected static function updateTotalPrice(Forms\Get $get, Forms\Set $set): void
-{
-    $selectedProducts = collect($get('transactionItems'))
-        ->filter(fn($item) => !empty($item['product_id']) && !empty($item['quantity']));
+    protected static function updateTotalPrice(Forms\Get $get, Forms\Set $set): void
+    {
+        $selectedProducts = collect($get('transactionItems'))
+            ->filter(fn($item) => !empty($item['product_id']) && !empty($item['quantity']));
 
-    $ids = $selectedProducts->pluck('product_id')->all();
-    $products = Product::withTrashed()->whereIn('id', $ids)->get();
+        $ids = $selectedProducts->pluck('product_id')->all();
+        $products = Product::withTrashed()->whereIn('id', $ids)->get();
 
-    $missingProducts = $selectedProducts->filter(fn($item) => !$products->contains('id', $item['product_id']));
+        $missingProducts = $selectedProducts->filter(fn($item) => !$products->contains('id', $item['product_id']));
 
-    if ($missingProducts->isNotEmpty()) {
-        Notification::make()
-            ->title('Beberapa produk tidak tersedia')
-            ->danger()
-            ->send();
+        if ($missingProducts->isNotEmpty()) {
+            Notification::make()
+                ->title('Beberapa produk tidak tersedia')
+                ->danger()
+                ->send();
+        }
+
+        $prices = $products->pluck('price', 'id');
+        $total = $selectedProducts->reduce(function ($total, $item) use ($prices) {
+            $productId = $item['product_id'];
+            $price = $prices[$productId] ?? 0;
+            $quantity = $item['quantity'];
+            return $total + ($price * $quantity);
+        }, 0);
+
+        $set('total', $total);
     }
-
-    $prices = $products->pluck('price', 'id');
-    $total = $selectedProducts->reduce(function ($total, $item) use ($prices) {
-        $productId = $item['product_id'];
-        $price = $prices[$productId] ?? 0;
-        $quantity = $item['quantity'];
-        return $total + ($price * $quantity);
-    }, 0);
-
-    $set('total', $total);
-}
 
 
     protected static function updateExcangePaid(Forms\Get $get, Forms\Set $set): void
