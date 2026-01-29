@@ -11,8 +11,22 @@ class Transaction extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'payment_method_id', 'transaction_number', 'name', 'email', 'phone',
-        'address', 'notes', 'total', 'cash_received', 'change'
+        'payment_method_id',
+        'transaction_number',
+        'name',
+        'email',
+        'phone',
+        'address',
+        'notes',
+        'total',
+        'cash_received',
+        'change',
+        'is_bpjs',
+        'jasa_dokter',
+        'jasa_tindakan'
+    ];
+    protected $casts = [
+        'is_bpjs' => 'boolean',
     ];
 
     public function transactionItems()
@@ -24,10 +38,9 @@ class Transaction extends Model
     {
         return $this->transactionItems()->with('product');
     }
-    
+
     public function paymentMethod()
     {
         return $this->belongsTo(PaymentMethod::class);
     }
-
 }

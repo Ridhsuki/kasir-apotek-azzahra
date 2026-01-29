@@ -74,17 +74,17 @@ class TransactionResource extends Resource implements HasShieldPermissions
     {
         return $form
             ->schema([
-                Forms\Components\Grid::make(3)
+                Forms\Components\Grid::make(1)
                     ->schema([
                         Forms\Components\TextInput::make('name')
                             ->maxLength(255)
                             ->nullable(),
-                        Forms\Components\TextInput::make('email')
-                            ->email()
-                            ->maxLength(255),
-                        Forms\Components\TextInput::make('phone')
-                            ->tel()
-                            ->maxLength(255),
+                        // Forms\Components\TextInput::make('email')
+                        //     ->email()
+                        //     ->maxLength(255),
+                        // Forms\Components\TextInput::make('phone')
+                        //     ->tel()
+                        //     ->maxLength(255),
                     ]),
                 Forms\Components\Section::make('Produk dipesan')->schema([
                     self::getItemsRepeater(),
@@ -96,11 +96,26 @@ class TransactionResource extends Resource implements HasShieldPermissions
                     ->schema([
                         Forms\Components\Section::make()
                             ->schema([
-                                Forms\Components\TextInput::make('total')
+                                Forms\Components\TextInput::make('subtotal')
+                                    ->label('Subtotal')
                                     ->required()
                                     ->readOnly()
-                                    ->numeric(),
+                                    ->numeric()
+                                    ->default(0),
                                 Forms\Components\TextInput::make('diskon')
+                                    ->label('Diskon (%)')
+                                    ->required()
+                                    ->numeric()
+                                    ->default(0)
+                                    ->minValue(0)
+                                    ->maxValue(100)
+                                    ->reactive()
+                                    ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set) {
+                                        self::updateTotalPrice($get, $set);
+                                    })
+                                    ->suffix('%'),
+                                Forms\Components\TextInput::make('total')
+                                    ->label('Total Setelah Diskon')
                                     ->required()
                                     ->readOnly()
                                     ->numeric()
@@ -138,6 +153,7 @@ class TransactionResource extends Resource implements HasShieldPermissions
                                     }),
                                 Forms\Components\Hidden::make('is_cash')
                                     ->dehydrated(),
+
                                 Forms\Components\TextInput::make('cash_received')
                                     ->numeric()
                                     ->reactive()
@@ -145,8 +161,7 @@ class TransactionResource extends Resource implements HasShieldPermissions
                                     ->readOnly(fn(Forms\Get $get) => $get('is_cash') == false)
                                     ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get, $state) {
                                         // function untuk menghitung uang kembalian
-
-                                        self::updateExcangePaid($get, $set);
+                                        self::updateExchangePaid($get, $set);
                                     }),
                                 Forms\Components\TextInput::make('change')
                                     ->numeric()
@@ -173,6 +188,16 @@ class TransactionResource extends Resource implements HasShieldPermissions
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nama Pemesan')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('subtotal')
+                    ->label('Subtotal')
+                    ->prefix('Rp ')
+                    ->numeric()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('diskon')
+                    ->label('Diskon')
+                    ->suffix('%')
+                    ->numeric()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('total')
                     ->label('Total Harga')
                     ->prefix('Rp ')
@@ -315,21 +340,21 @@ class TransactionResource extends Resource implements HasShieldPermissions
                         $set('total_profit', ($price - $costPrice) * $quantity);
                         self::updateTotalPrice($get, $set);
                     }),
-                Forms\Components\TextInput::make('cost_price')
-                    ->label('Harga Modal')
-                    ->required()
-                    ->numeric()
-                    ->readOnly()
-                    ->columnSpan([
-                        'md' => 3
-                    ]),
+                // Forms\Components\TextInput::make('cost_price')
+                //     ->label('Harga Modal')
+                //     ->required()
+                //     ->numeric()
+                //     ->readOnly()
+                //     ->columnSpan([
+                //         'md' => 3
+                //     ]),
                 Forms\Components\TextInput::make('price')
                     ->label('Harga jual')
                     ->required()
                     ->numeric()
                     ->readOnly()
                     ->columnSpan([
-                        'md' => 3
+                        'md' => 5
                     ]),
                 Forms\Components\TextInput::make('total_profit')
                     ->label('Profit')
@@ -337,7 +362,7 @@ class TransactionResource extends Resource implements HasShieldPermissions
                     ->numeric()
                     ->readOnly()
                     ->columnSpan([
-                        'md' => 3
+                        'md' => 5
                     ]),
 
             ])
@@ -375,6 +400,24 @@ class TransactionResource extends Resource implements HasShieldPermissions
                     ->label('Nama Customer :')
                     ->badge()
                     ->color('primary')
+                    ->weight(FontWeight::Bold),
+                TextEntry::make('subtotal')
+                    ->label('Subtotal :')
+                    ->money('IDR')
+                    ->badge()
+                    ->color('warning')
+                    ->weight(FontWeight::Bold),
+                TextEntry::make('diskon')
+                    ->label('Diskon :')
+                    ->suffix('%')
+                    ->badge()
+                    ->color('danger')
+                    ->weight(FontWeight::Bold),
+                TextEntry::make('total')
+                    ->label('Total Setelah Diskon :')
+                    ->money('IDR')
+                    ->badge()
+                    ->color('success')
                     ->weight(FontWeight::Bold),
                 TextEntry::make('paymentMethod.name')
                     ->label('Metode Pembayaran :')
@@ -424,18 +467,24 @@ class TransactionResource extends Resource implements HasShieldPermissions
         }
 
         $prices = $products->pluck('price', 'id');
-        $total = $selectedProducts->reduce(function ($total, $item) use ($prices) {
+        $subtotal = $selectedProducts->reduce(function ($subtotal, $item) use ($prices) {
             $productId = $item['product_id'];
             $price = $prices[$productId] ?? 0;
             $quantity = $item['quantity'];
-            return $total + ($price * $quantity);
+            return $subtotal + ($price * $quantity);
         }, 0);
 
+        // Hitung diskon
+        $diskonPercentage = (float) ($get('diskon') ?? 0);
+        $diskonAmount = $subtotal * ($diskonPercentage / 100);
+        $total = $subtotal - $diskonAmount;
+
+        $set('subtotal', $subtotal);
         $set('total', $total);
     }
 
 
-    protected static function updateExcangePaid(Forms\Get $get, Forms\Set $set): void
+    protected static function updateExchangePaid(Forms\Get $get, Forms\Set $set): void
     {
         $paidAmount = (int) $get('cash_received') ?? 0;
         $totalPrice = (int) $get('total') ?? 0;

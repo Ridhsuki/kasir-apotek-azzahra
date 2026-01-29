@@ -204,7 +204,6 @@ class ProductResource extends Resource implements HasShieldPermissions
                     ->sortable(),
                 Tables\Columns\TextColumn::make('no_batch')
                     ->label('No Batch')
-                    ->prefix('Rp ')
                     ->sortable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
