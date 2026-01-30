@@ -22,8 +22,9 @@ class Transaction extends Model
         'cash_received',
         'change',
         'is_bpjs',
+        'user_id',
         'jasa_dokter',
-        'jasa_tindakan'
+        'jasa_tindakan',
     ];
     protected $casts = [
         'is_bpjs' => 'boolean',
@@ -42,5 +43,10 @@ class Transaction extends Model
     public function paymentMethod()
     {
         return $this->belongsTo(PaymentMethod::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 }

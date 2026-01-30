@@ -69,19 +69,34 @@ class ProductResource extends Resource implements HasShieldPermissions
                     ->required()
                     ->maxLength(255),
                 Forms\Components\Select::make('category_id')
-                    ->label('Kategori Produk')
+                    ->label('Kategori Produk (Rak)')
                     ->relationship('category', 'name')
                     ->required(),
-                Forms\Components\TextInput::make('cost_price')
-                    ->label('Harga Modal')
-                    ->required()
-                    ->numeric()
-                    ->prefix('Rp'),
-                Forms\Components\TextInput::make('price')
-                    ->label('Harga Jual')
-                    ->required()
-                    ->numeric()
-                    ->prefix('Rp'),
+                Forms\Components\Section::make('Harga')
+                    ->schema([
+                        Forms\Components\TextInput::make('cost_price')
+                            ->label('Harga Modal')
+                            ->required()
+                            ->numeric()
+                            ->prefix('Rp'),
+                        Forms\Components\TextInput::make('price')
+                            ->label('Harga Eceran (Umum)')
+                            ->numeric()
+                            ->prefix('Rp')
+                            ->required(),
+
+                        Forms\Components\TextInput::make('price_2')
+                            ->label('Harga Grosir (Bidan/Dokter)')
+                            ->numeric()
+                            ->prefix('Rp')
+                            ->default(0),
+
+                        Forms\Components\TextInput::make('price_racikan') // KONSISTEN
+                            ->label('Harga Racikan')
+                            ->numeric()
+                            ->prefix('Rp')
+                            ->default(0),
+                    ])->columns(2),
 
                 Forms\Components\TextInput::make('stock')
                     ->label('Stok Produk')
@@ -295,6 +310,6 @@ class ProductResource extends Resource implements HasShieldPermissions
         $pdf = Pdf::loadView('pdf.barcodes.barcode', compact('barcodes'))->setPaper('a4', 'portrait');
 
         // Kembalikan response download tanpa metode header()
-        return response()->streamDownload(fn() => print($pdf->output()), 'barcodes.pdf');
+        return response()->streamDownload(fn() => print ($pdf->output()), 'barcodes.pdf');
     }
 }

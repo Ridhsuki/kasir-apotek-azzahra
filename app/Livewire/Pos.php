@@ -23,7 +23,7 @@ class Pos extends Component implements HasForms
     use InteractsWithForms;
     use WithPagination;
 
-    public int | string $perPage = 10;
+    public int|string $perPage = 10;
     public $categories;
     public $selectedCategory;
     public $search = '';
@@ -42,7 +42,7 @@ class Pos extends Component implements HasForms
     public $is_bjps = false;
     public $jasa_dokter = 0;
     public $jasa_tindakan = 0;
-
+    public string $selectedPriceType = 'price';
     protected $listeners = [
         'scanResult' => 'handleScanResult',
     ];
@@ -247,7 +247,7 @@ class Pos extends Component implements HasForms
 
         // Format dengan titik jika tidak kosong
         if (!empty($numericValue)) {
-            return number_format((int)$numericValue, 0, ',', '.');
+            return number_format((int) $numericValue, 0, ',', '.');
         }
 
         return $value;
@@ -263,7 +263,7 @@ class Pos extends Component implements HasForms
         }
 
         $isNegative = $value < 0;
-        $absoluteValue = abs((int)$value);
+        $absoluteValue = abs((int) $value);
 
         $formatted = number_format($absoluteValue, 0, ',', '.');
 
@@ -282,7 +282,7 @@ class Pos extends Component implements HasForms
         // Handle nilai negatif dengan format minus
         $isNegative = strpos($formattedValue, '-') === 0;
         $cleanValue = preg_replace('/[^0-9]/', '', $formattedValue);
-        $numericValue = (int)$cleanValue;
+        $numericValue = (int) $cleanValue;
 
         return $isNegative ? -$numericValue : $numericValue;
     }
@@ -329,34 +329,37 @@ class Pos extends Component implements HasForms
     public function addToOrder($productId)
     {
         $product = Product::find($productId);
+        if (!$product)
+            return;
 
-        if ($product) {
-            $existingItemKey = array_search($productId, array_column($this->order_items, 'product_id'));
+        $selectedPrice = $product->{$this->selectedPriceType};
+        $priceToUse = ($selectedPrice > 0) ? $selectedPrice : $product->price;
 
-            if ($existingItemKey !== false) {
-                if ($this->order_items[$existingItemKey]['quantity'] >= $product->stock) {
-                    Notification::make()
-                        ->title('Stok barang tidak mencukupi')
-                        ->danger()
-                        ->send();
-                    return;
-                } else {
-                    $this->order_items[$existingItemKey]['quantity']++;
-                }
+
+        $existingItemKey = array_search($productId, array_column($this->order_items, 'product_id'));
+
+        if ($existingItemKey !== false) {
+            if ($this->order_items[$existingItemKey]['quantity'] >= $product->stock) {
+                Notification::make()
+                    ->title('Stok barang tidak mencukupi')
+                    ->danger()
+                    ->send();
+                return;
             } else {
-                $this->order_items[] = [
-                    'product_id' => $product->id,
-                    'name' => $product->name,
-                    'price' => $product->price,
-                    'cost_price' => $product->cost_price,
-                    'total_profit' => $product->price - $product->cost_price,
-                    'image_url' => $product->image,
-                    'quantity' => 1,
-                ];
+                $this->order_items[$existingItemKey]['quantity']++;
             }
-
-            session()->put('orderItems', $this->order_items);
+        } else {
+            $this->order_items[] = [
+                'product_id' => $product->id,
+                'name' => $product->name,
+                'price' => (int) $priceToUse,
+                'cost_price' => $product->cost_price,
+                'total_profit' => (int) $priceToUse - $product->cost_price,
+                'image_url' => $product->image,
+                'quantity' => 1,
+            ];
         }
+        session()->put('orderItems', $this->order_items);
     }
 
     public function loadOrderItems($orderItems)
@@ -502,6 +505,7 @@ class Pos extends Component implements HasForms
         }
 
         $order = Transaction::create([
+            'user_id' => auth()->id(),
             'payment_method_id' => $payment_method_id_temp,
             'transaction_number' => TransactionHelper::generateUniqueTrxId(),
             'name' => $this->name,

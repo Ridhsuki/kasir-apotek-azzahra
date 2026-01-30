@@ -185,6 +185,13 @@ class TransactionResource extends Resource implements HasShieldPermissions
                     ->copyMessage('#No.Transaksi copied')
                     ->copyMessageDuration(1500)
                     ->searchable(),
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label('Kasir/Karyawan')
+                    ->icon('heroicon-m-user')
+                    ->sortable()
+                    ->searchable()
+                    ->badge()
+                    ->color('info'),
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nama Pemesan')
                     ->searchable(),
@@ -212,6 +219,14 @@ class TransactionResource extends Resource implements HasShieldPermissions
                 Tables\Columns\TextColumn::make('updated_at')
                     ->dateTime()
                     ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('total')
+                    ->money('IDR')
+                    ->sortable()
+                    ->summarize(
+                        \Filament\Tables\Columns\Summarizers\Sum::make()
+                            ->money('IDR')
+                            ->label('Total Penjualan')
+                    ),
             ])
             ->filters([
                 Tables\Filters\Filter::make('date_range')
@@ -230,6 +245,9 @@ class TransactionResource extends Resource implements HasShieldPermissions
                     ->placeholder('Tanpa return pelanggan')
                     ->trueLabel('Beserta return pelanggan')
                     ->falseLabel('Hanya return pelanggan'),
+                Tables\Filters\SelectFilter::make('user_id')
+                    ->label('Filter per Karyawan')
+                    ->relationship('user', 'name')
             ], layout: Tables\Enums\FiltersLayout::Modal)
             ->actions([
                 Tables\Actions\Action::make('PrintBluetooth')

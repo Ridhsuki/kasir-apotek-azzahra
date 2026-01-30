@@ -14,7 +14,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-    // Create a user with a specific role
+        // Create a user with a specific role
         // \App\Models\User::factory()->create([
         //     'name' => 'Owner Toko',
         //     'email' => 'admin@gmail.com',
@@ -22,10 +22,26 @@ class DatabaseSeeder extends Seeder
         // ]); // you can use a more secure approach
 
         User::updateOrCreate(
-            ['email' => 'admin@gmail.com'], // key unik
+            ['email' => 'admin@gmail.com'],
             [
                 'name' => 'Owner Toko',
-                'password' => Hash::make('admin123'),
+                'password' => Hash::make('password'),
+            ]
+        );
+
+        User::updateOrCreate(
+            ['email' => 'karyawan1@gmail.com'],
+            [
+                'name' => 'Karyawan 1',
+                'password' => Hash::make('password'),
+            ]
+        );
+
+        User::updateOrCreate(
+            ['email' => 'karyawan2@gmail.com'],
+            [
+                'name' => 'Karyawan 2',
+                'password' => Hash::make('password'),
             ]
         );
 

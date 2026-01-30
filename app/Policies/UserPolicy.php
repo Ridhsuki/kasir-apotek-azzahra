@@ -141,9 +141,4 @@ class UserPolicy
     {
         return $user->can('{{ Reorder }}');
     }
-    public function toggleActive(User $user, User $model)
-    {
-        // Hanya admin atau user sendiri yang bisa mengubah status
-        return $user->hasRole('admin') || $user->id === $model->id;
-    }
 }

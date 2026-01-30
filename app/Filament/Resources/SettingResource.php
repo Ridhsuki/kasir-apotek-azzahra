@@ -90,14 +90,11 @@ class SettingResource extends Resource implements HasShieldPermissions
                     ->circular()
                     ->label('Logo Toko'),
                 Tables\Columns\TextColumn::make('name')
-                    ->label('Nama Toko')
-                    ->searchable(),
+                    ->label('Nama Toko'),
                 Tables\Columns\TextColumn::make('address')
-                    ->label('Alamat Toko')
-                    ->searchable(),
+                    ->label('Alamat Toko'),
                 Tables\Columns\TextColumn::make('phone')
-                    ->label('Nomor Telepon')
-                    ->searchable(),
+                    ->label('Nomor Telepon'),
                 Tables\Columns\IconColumn::make('print_via_bluetooth')
                     ->label('Print Via Bluetooth')
                     ->boolean(),
@@ -117,9 +114,9 @@ class SettingResource extends Resource implements HasShieldPermissions
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
+                // Tables\Actions\BulkActionGroup::make([
+                //     Tables\Actions\DeleteBulkAction::make(),
+                // ]),
             ]);
     }
 

@@ -24,8 +24,9 @@ class Product extends Model
         'description',
         'is_active',
         'expiry_date',
-        'no_batch'
-
+        'no_batch',
+        'price_2',
+        'price_racikan'
     ];
 
     public function isNearExpiry(): bool
