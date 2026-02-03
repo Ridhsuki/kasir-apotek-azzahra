@@ -59,6 +59,7 @@ class CashFlowResource extends Resource implements HasShieldPermissions
                     ->grouped()
                     ->live(),
                 Forms\Components\Select::make('source')
+                    ->required()
                     ->options(fn(Get $get) => CashFlowLabelService::getSourceOptionsByType($get('type'))),
                 Forms\Components\TextInput::make('amount')
                     ->prefix('Rp ')
@@ -118,7 +119,7 @@ class CashFlowResource extends Resource implements HasShieldPermissions
                             ->when($data['end_date'], fn($query, $date) => $query->whereDate('created_at', '<=', $date));
                     })
                     ->indicateUsing(fn(array $data): ?string =>
-                    $data['start_date'] ? 'Dari ' . Carbon::parse($data['start_date'])->toFormattedDateString() . ($data['end_date'] ? ' Sampai ' . Carbon::parse($data['end_date'])->toFormattedDateString() : '')
+                        $data['start_date'] ? 'Dari ' . Carbon::parse($data['start_date'])->toFormattedDateString() . ($data['end_date'] ? ' Sampai ' . Carbon::parse($data['end_date'])->toFormattedDateString() : '')
                         : ($data['end_date'] ? 'Sampai ' . Carbon::parse($data['end_date'])->toFormattedDateString() : null)),
                 Tables\Filters\Filter::make('SourceTipe')
                     ->form([
@@ -146,7 +147,7 @@ class CashFlowResource extends Resource implements HasShieldPermissions
                     })
                     ->indicateUsing(
                         fn(array $data): ?string => ($data['type'] ? 'Tipe: ' . CashFlowLabelService::getTypeLabel($data['type']) : null) .
-                            ($data['source'] ? ', Sumber: ' . CashFlowLabelService::getSourceLabel($data['type'], $data['source']) : '')
+                        ($data['source'] ? ', Sumber: ' . CashFlowLabelService::getSourceLabel($data['type'], $data['source']) : '')
                     )
             ], layout: Tables\Enums\FiltersLayout::Modal)
             ->actions([
@@ -154,10 +155,10 @@ class CashFlowResource extends Resource implements HasShieldPermissions
                     ->visible(
                         fn($record) =>
                         $record->source !== 'sales' &&
-                            $record->source !== 'adjustment' &&
-                            $record->source !== 'restored_sales' &&
-                            $record->source !== 'refund' &&
-                            $record->source !== 'purchase_stock'
+                        $record->source !== 'adjustment' &&
+                        $record->source !== 'restored_sales' &&
+                        $record->source !== 'refund' &&
+                        $record->source !== 'purchase_stock'
                     ),
             ])
             ->bulkActions([
