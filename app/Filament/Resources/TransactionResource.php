@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use Filament\Forms;
+use Filament\Forms\Components\Hidden;
 use Filament\Tables;
 use App\Models\Product;
 use App\Models\Setting;
@@ -25,6 +26,7 @@ use Filament\Infolists\Components\TextEntry;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\TransactionResource\Pages;
 use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
+use Illuminate\Support\Facades\Auth;
 
 class TransactionResource extends Resource implements HasShieldPermissions
 {
@@ -69,22 +71,18 @@ class TransactionResource extends Resource implements HasShieldPermissions
     }
 
 
-
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
+                Hidden::make('user_id')
+                    ->default(auth()->id())
+                    ->required(),
                 Forms\Components\Grid::make(1)
                     ->schema([
                         Forms\Components\TextInput::make('name')
                             ->maxLength(255)
                             ->nullable(),
-                        // Forms\Components\TextInput::make('email')
-                        //     ->email()
-                        //     ->maxLength(255),
-                        // Forms\Components\TextInput::make('phone')
-                        //     ->tel()
-                        //     ->maxLength(255),
                     ]),
                 Forms\Components\Section::make('Produk dipesan')->schema([
                     self::getItemsRepeater(),
@@ -156,6 +154,7 @@ class TransactionResource extends Resource implements HasShieldPermissions
 
                                 Forms\Components\TextInput::make('cash_received')
                                     ->numeric()
+                                    ->required()
                                     ->reactive()
                                     ->label('Nominal pembayaran')
                                     ->readOnly(fn(Forms\Get $get) => $get('is_cash') == false)
@@ -319,28 +318,34 @@ class TransactionResource extends Resource implements HasShieldPermissions
                     ->required()
                     ->options(function (Forms\Get $get) {
                         $selectedId = $get('product_id');
-                        // Ambil produk aktif (stock > 1)
                         $productsQuery = Product::query()
                             ->where('stock', '>', 0);
-                        // Jika produk yang sedang dipilih sudah soft deleted, tetap sertakan
                         if ($selectedId) {
                             $productsQuery->orWhere('id', $selectedId);
                         }
-                        // Ambil semua termasuk soft deleted
                         return $productsQuery->pluck('name', 'id');
                     })
+                    ->columnSpan(['md' => 5])
+                    ->disableOptionsWhenSelectedInSiblingRepeaterItems()
+                    ->reactive()
 
-                    ->columnSpan([
-                        'md' => 5
-                    ])
                     ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
                         $product = Product::withTrashed()->find($state);
-                        $set('cost_price', $product->cost_price ?? 0);
-                        $set('price', $product->price ?? 0);
-                        $set('total_profit', ($product->price ?? 0) - ($product->cost_price ?? 0) ?? 0);
+
+                        if ($product) {
+                            $set('cost_price', $product->cost_price ?? 0);
+                            $set('price', $product->price ?? 0);
+
+                            $profitPerUnit = ($product->price ?? 0) - ($product->cost_price ?? 0);
+                            $set('total_profit', $profitPerUnit);
+                        } else {
+                            $set('cost_price', 0);
+                            $set('price', 0);
+                            $set('total_profit', 0);
+                        }
+
                         self::updateTotalPrice($get, $set);
-                    })
-                    ->disableOptionsWhenSelectedInSiblingRepeaterItems(),
+                    }),
                 Forms\Components\TextInput::make('quantity')
                     ->required()
                     ->numeric()
@@ -358,14 +363,8 @@ class TransactionResource extends Resource implements HasShieldPermissions
                         $set('total_profit', ($price - $costPrice) * $quantity);
                         self::updateTotalPrice($get, $set);
                     }),
-                // Forms\Components\TextInput::make('cost_price')
-                //     ->label('Harga Modal')
-                //     ->required()
-                //     ->numeric()
-                //     ->readOnly()
-                //     ->columnSpan([
-                //         'md' => 3
-                //     ]),
+                Hidden::make('cost_price')
+                    ->dehydrated(),
                 Forms\Components\TextInput::make('price')
                     ->label('Harga jual')
                     ->required()
@@ -382,7 +381,6 @@ class TransactionResource extends Resource implements HasShieldPermissions
                     ->columnSpan([
                         'md' => 5
                     ]),
-
             ])
             ->mutateRelationshipDataBeforeSaveUsing(function (array $data) {
                 $invalidProducts = collect($data['transactionItems'] ?? [])
