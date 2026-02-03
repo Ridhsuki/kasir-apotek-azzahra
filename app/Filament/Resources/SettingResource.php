@@ -89,7 +89,7 @@ class SettingResource extends Resource implements HasShieldPermissions
                 Tables\Columns\ImageColumn::make('logo')
                     ->circular()
                     ->getStateUsing(function ($record) {
-                        if ($record->image) {
+                        if ($record->logo) {
                             return asset("storage/{$record->logo}");
                         }
                         return asset('storage/products/product-default.jpg');
