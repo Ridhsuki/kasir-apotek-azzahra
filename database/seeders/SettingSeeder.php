@@ -16,7 +16,7 @@ class SettingSeeder extends Seeder
     {
         DB::table('settings')->insert([
             'id' => 1,
-            'logo' => "storage/products/product-default.jpg",
+            'logo' => "products/product-default.jpg",
             'name' => 'Apotek Azzahra',
             'phone' => '081234567890',
             'address' => 'Jl. Pahlawan No. 123, Kota Sejahtera, 14045',
